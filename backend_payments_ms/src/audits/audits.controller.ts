@@ -1,34 +1,32 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Query,
+} from '@nestjs/common';
 import { AuditsService } from './audits.service';
-import { CreateAuditDto } from './dto/create-audit.dto';
-import { UpdateAuditDto } from './dto/update-audit.dto';
 
-@Controller('audits')
+@Controller('api/audit')
 export class AuditsController {
   constructor(private readonly auditsService: AuditsService) {}
 
-  @Post()
-  create(@Body() createAuditDto: CreateAuditDto) {
-    return this.auditsService.create(createAuditDto);
-  }
-
   @Get()
-  findAll() {
-    return this.auditsService.findAll();
+  async findAll(
+    @Query('paymentRef') paymentRef?: string,
+    @Query('action') action?: string,
+  ) {
+    if (paymentRef) {
+      return await this.auditsService.findByPaymentRef(paymentRef);
+    }
+    if (action) {
+      return await this.auditsService.findByAction(action);
+    }
+    return await this.auditsService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.auditsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuditDto: UpdateAuditDto) {
-    return this.auditsService.update(+id, updateAuditDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.auditsService.remove(+id);
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    return await this.auditsService.findOne(id);
   }
 }

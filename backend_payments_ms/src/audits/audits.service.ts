@@ -1,26 +1,52 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAuditDto } from './dto/create-audit.dto';
-import { UpdateAuditDto } from './dto/update-audit.dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Audit } from '../database/entities/audit.entity';
 
 @Injectable()
 export class AuditsService {
-  create(createAuditDto: CreateAuditDto) {
-    return 'This action adds a new audit';
+  constructor(
+    @InjectRepository(Audit)
+    private auditRepository: Repository<Audit>,
+  ) {}
+
+  async findAll(): Promise<Audit[]> {
+    return await this.auditRepository.find({
+      order: { date: 'DESC' },
+    });
   }
 
-  findAll() {
-    return `This action returns all audits`;
+  async findOne(id: number): Promise<Audit> {
+    const audit = await this.auditRepository.findOne({
+      where: { auditId: id },
+    });
+
+    if (!audit) {
+      throw new NotFoundException(`Audit record with ID ${id} not found`);
+    }
+
+    return audit;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} audit`;
+  async findByPaymentRef(paymentRef: string): Promise<Audit[]> {
+    return await this.auditRepository.find({
+      where: { paymentRef },
+      order: { date: 'DESC' },
+    });
   }
 
-  update(id: number, updateAuditDto: UpdateAuditDto) {
-    return `This action updates a #${id} audit`;
+  async findByAction(action: string): Promise<Audit[]> {
+    return await this.auditRepository.find({
+      where: { action },
+      order: { date: 'DESC' },
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} audit`;
+  async findByDateRange(startDate: Date, endDate: Date): Promise<Audit[]> {
+    return await this.auditRepository
+      .createQueryBuilder('audit')
+      .where('audit.date BETWEEN :startDate AND :endDate', { startDate, endDate })
+      .orderBy('audit.date', 'DESC')
+      .getMany();
   }
 }
